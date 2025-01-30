@@ -28,5 +28,5 @@ def make_executable(
 
 
 @make_executable()
-def simple_task(param1: str, param2:str):
+def simple_task(param1: str, param2: str):
     print(f"this is param1 : {param1} and this is param2 : {param2}")
