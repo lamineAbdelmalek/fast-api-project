@@ -23,6 +23,8 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./initial_data/company_credit_scores.csv:/docker-entrypoint-initdb.d/company_credit_scores.csv
     restart: always
 
 volumes:
