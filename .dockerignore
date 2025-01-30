@@ -1,0 +1,9 @@
+Dockerfile
+.dockerignore
+.flake8
+.gitignore
+.idea
+.mypy_cache
+tests
+.venv
+.coverage*
