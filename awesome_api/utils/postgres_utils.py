@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -14,23 +14,10 @@ from awesome_api.constants import (
     ENV_VAR_POSTGRES_PASSWORD,
     ENV_VAR_POSTGRES_USER,
 )
+from awesome_api.models import SqlRequestExecutor, TransactionalQuery
 
 
-class BaseDataSource(ABC):
-    """Abstract class for data source connection and querying."""
-
-    @abstractmethod
-    def get_db_url(self) -> str:
-        """Establish a connection to the data source."""
-        pass
-
-    @abstractmethod
-    def run_select_query(self, query: str) -> DataFrame:
-        """Run a SELECT query and return the results."""
-        pass
-
-
-class PostgresDataSource(BaseDataSource):
+class PostgresDataSource(SqlRequestExecutor):
     """PostgreSQL implementation of BaseDataSource."""
 
     def __init__(self):
@@ -40,10 +27,7 @@ class PostgresDataSource(BaseDataSource):
         self, query: str, params: Optional[Dict[str, Any]] = None
     ) -> DataFrame:
         # Get database url
-        database_url = self.get_db_url()
-
-        # Create a database engine
-        engine = create_engine(database_url)
+        engine = self._create_db_engine()
 
         # Execute the query and load results into a Pandas DataFrame
         if params:
@@ -54,6 +38,50 @@ class PostgresDataSource(BaseDataSource):
         engine.dispose()
 
         return df
+
+    def run_insert_query(
+        self, query: str, params: Optional[Dict[str, Any]] = None
+    ) -> None:
+        engine = self._create_db_engine()
+        with engine.connect() as connection:
+            if params:
+                connection.execute(text(query), params)
+            else:
+                connection.execute(text(query))
+        engine.dispose()
+
+    def run_update_query(
+        self, query: str, params: Optional[Dict[str, Any]] = None
+    ) -> None:
+        engine = self._create_db_engine()
+        with engine.connect() as connection:
+            if params:
+                connection.execute(text(query), params)
+            else:
+                connection.execute(text(query))
+        engine.dispose()
+
+    def _create_db_engine(self):
+        database_url = self.get_db_url()
+        # Create a database engine
+        engine = create_engine(database_url)
+        return engine
+
+    def run_queries_in_one_transaction(self, queries: List[TransactionalQuery]) -> None:
+        engine = self._create_db_engine()
+        with engine.connect() as connection:
+            transaction = connection.begin()  # Start the transaction
+            try:
+                # Execute multiple queries
+                for query in queries:
+                    connection.execute(text(query.query), query.params)
+                # Commit the transaction if all queries succeed
+                transaction.commit()
+            except Exception as e:
+                # Roll back the transaction in case of any error
+                transaction.rollback()
+                print(f"Transaction rolled back due to: {e}")
+                raise e
 
     def get_db_url(self) -> str:
         if ENV_VAR_POSTGRES_DATABASE_URL in os.environ:
