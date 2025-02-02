@@ -54,9 +54,9 @@ class SqlPortfolioManager(PortfolioManager):
     ) -> TransactionalQuery:
         query = """
         UPDATE client_portfolio
-        SET 
+        SET
             validity_end_date = :end_date,
-        WHERE 
+        WHERE
             portfolio_entry_id = :portfolio_entry_id;
         """
         params = {
@@ -71,9 +71,9 @@ class SqlPortfolioManager(PortfolioManager):
     ) -> TransactionalQuery:
         query = """
         UPDATE client_portfolio
-        SET 
+        SET
             IS_VALID = :is_valid,
-        WHERE 
+        WHERE
             portfolio_entry_id = :portfolio_entry_id;
         """
         params = {
