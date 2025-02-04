@@ -18,6 +18,11 @@ class DummyClientPortfolioModel(BaseModel):
     validity_start_date: str
 
 
+class MonitoringStatus(BaseModel):
+    company_id: str
+    monitored: bool
+
+
 class TransactionalQuery(BaseModel):
     query: str
     params: Optional[Dict[str, Any]] = None
