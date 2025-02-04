@@ -3,7 +3,12 @@ from typing import List
 
 from fastapi import FastAPI
 
-from awesome_api.models import DummyClientPortfolioModel, DummyScoreModel, OrderType
+from awesome_api.models import (
+    DummyClientPortfolioModel,
+    DummyScoreModel,
+    MonitoringStatus,
+    OrderType,
+)
 from awesome_api.portfolio_management import SqlPortfolioManager
 from awesome_api.utils.postgres_utils import PostgresDataSource
 
@@ -46,6 +51,14 @@ def get_portfolio():
     db = PostgresDataSource()
     pf_manager = SqlPortfolioManager(executor=db)
     return pf_manager.get_portfolio()
+
+
+@app.delete("/delete_company/{company_id}", response_model=MonitoringStatus)
+def delete_company(company_id: str):
+    db = PostgresDataSource()
+    pf_manager = SqlPortfolioManager(executor=db)
+    pf_manager.remove_company(company_id=company_id, removal_date=datetime.now())
+    return MonitoringStatus(company_id=company_id, monitored=False)
 
 
 @app.get("/hello")
