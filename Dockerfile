@@ -27,8 +27,12 @@ RUN rm -f requirements.txt
 
 # Copy the rest of the application
 COPY awesome_api/ awesome_api/
+COPY pyproject.toml .
+
+RUN pip install .
 
 
 EXPOSE 8100
+EXPOSE 8501
 
-CMD ["uvicorn", "awesome_api.fastapi_views:app", "--host", "0.0.0.0", "--port", "8100"]
+CMD sh -c "uvicorn awesome_api.fastapi_views:app --host 0.0.0.0 --port 8100 & streamlit run awesome_api/app.py --server.port=8501 --server.address=0.0.0.0"

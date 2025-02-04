@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "8100:8100"
+      - "8501:8501"
     depends_on:
       - db
     env_file:

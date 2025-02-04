@@ -12,6 +12,7 @@ uvicorn = {version = "^0.23.0", extras = ["standard"]}
 pandas = "^2.2.3"
 sqlalchemy = "^2.0.37"
 psycopg2-binary = "^2.9.10"
+streamlit = "^1.42.0"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.1.0"
