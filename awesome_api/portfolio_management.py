@@ -55,7 +55,7 @@ class SqlPortfolioManager(PortfolioManager):
         query = """
         UPDATE client_portfolio
         SET
-            validity_end_date = :end_date,
+            validity_end_date = :end_date
         WHERE
             portfolio_entry_id = :portfolio_entry_id;
         """
@@ -72,7 +72,7 @@ class SqlPortfolioManager(PortfolioManager):
         query = """
         UPDATE client_portfolio
         SET
-            IS_VALID = :is_valid,
+            IS_VALID = :is_valid
         WHERE
             portfolio_entry_id = :portfolio_entry_id;
         """
@@ -148,7 +148,7 @@ class SqlPortfolioManager(PortfolioManager):
                     queries=[
                         self._build_stop_monitoring_query(
                             end_date=removal_date,
-                            portfolio_entry_id=df["portfolio_entry_id"].iloc[0],
+                            portfolio_entry_id=int(df["portfolio_entry_id"].iloc[0]),
                         )
                     ]
                 )
