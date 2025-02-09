@@ -21,6 +21,16 @@ CREATE TABLE IF NOT EXISTS client_orders (
     )
 );
 
+CREATE TABLE IF NOT EXISTS claims (
+    CLAIM_ID VARCHAR(20) PRIMARY KEY,
+    CLAIM_CREATION_DATE TIMESTAMP NOT NULL,
+    DEBTOR_ID VARCHAR(12),
+    CLIENT_ID VARCHAR(12),
+    LAST_UPDATE_DATE TIMESTAMP,
+    INITIAL_CLAIM_AMOUNT INT NOT NULL,
+    CURRENT_CLAIM_AMOUNT INT
+);
+
 -- Populate the table only if it's empty
 DO
 $$
@@ -28,6 +38,25 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM company_credit_scores LIMIT 1) THEN
         COPY company_credit_scores (SCORE_DATE, COMPANY_ID, SCORE, SCORE_TYPE)
         FROM '/docker-entrypoint-initdb.d/company_credit_scores.csv'
+        DELIMITER ',' CSV HEADER;
+    END IF;
+END
+$$;
+
+DO
+$$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM claims LIMIT 1) THEN
+        COPY claims (
+            CLAIM_ID,
+            CLAIM_CREATION_DATE,
+            DEBTOR_ID,
+            CLIENT_ID,
+            LAST_UPDATE_DATE,
+            INITIAL_CLAIM_AMOUNT,
+            CURRENT_CLAIM_AMOUNT
+        )
+        FROM '/docker-entrypoint-initdb.d/company_claims.csv'
         DELIMITER ',' CSV HEADER;
     END IF;
 END
