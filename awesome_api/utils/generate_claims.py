@@ -8,12 +8,12 @@ import pandas as pd
 from pandas import DataFrame
 
 # Configuration
-NUM_CLAIMS = 1000
+NUM_CLAIMS = 500
 MAX_HISTORY = 10  # Maximum records per company
 MAX_CLAIM_PER_COMPANY = 5
 SCORE_FILE = "initial_data/company_credit_scores.csv"
 OUTPUT_FILE = "initial_data/company_claims.csv"
-SAMPLE_SIZE = 5
+SAMPLE_SIZE = 3
 MIN_CLAIM_AMOUNT = 10000
 MAX_CLAIM_AMOUNT = 1000000
 

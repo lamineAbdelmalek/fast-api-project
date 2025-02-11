@@ -35,6 +35,29 @@ class OrderType(Enum):
     CLAIM_UPDATES = "claim_updates"
 
 
+class ClaimStatus(Enum):
+    SETTLED = "settled"
+    PARTIALLY_SETTLED = "partially_settled"
+    NOT_SETTLED = "not settled"
+
+
+class ClaimSize(Enum):
+    XS = "XS"
+    S = "S"
+    M = "M"
+    L = "L"
+    XL = "XL"
+
+
+class ClaimInfo(BaseModel):
+    claim_creation_date: str
+    company_id: str
+    hashed_claim_id: str
+    claim_size: ClaimSize
+    claim_status: ClaimStatus
+    claim_status_date: str
+
+
 class ClientOrder(BaseModel):
     company_id: str
     order_type: OrderType

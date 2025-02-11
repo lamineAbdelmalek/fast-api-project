@@ -3,7 +3,13 @@ from typing import List
 
 from fastapi import FastAPI
 
+from awesome_api.claims_management import (
+    hash_claim_id,
+    set_claim_size,
+    set_claim_status,
+)
 from awesome_api.models import (
+    ClaimInfo,
     DummyClientPortfolioModel,
     DummyScoreModel,
     MonitoringStatus,
@@ -44,6 +50,37 @@ def get_scores(company_id: str):
         company_id=company_id, insertion_date=now, order_type=OrderType.SCORES
     )
     return [DummyScoreModel.model_validate(record) for record in records]
+
+
+@app.get("/{company_id}/claims", response_model=list[ClaimInfo])
+def get_claims(company_id: str):
+    now = datetime.now()
+    params = {"company_id": company_id}
+    db = PostgresDataSource()
+    df = db.run_select_query(
+        query="SELECT claim_creation_date, debtor_id, claim_id, initial_claim_amount, current_claim_amount, last_update_date"
+        " FROM claims"
+        " WHERE debtor_id = :company_id",
+        params=params,
+    )
+    claims = []
+    for i in range(len(df)):
+        claim_info = {
+            "claim_creation_date": df.iloc[i]["claim_creation_date"].strftime("%Y-%m"),
+            "company_id": df.iloc[i]["debtor_id"],
+            "hashed_claim_id": hash_claim_id(df.iloc[i]["claim_id"]),
+            "claim_size": set_claim_size(df.iloc[i]["initial_claim_amount"]),
+            "claim_status": set_claim_status(
+                df.iloc[i]["initial_claim_amount"], df.iloc[i]["current_claim_amount"]
+            ),
+            "claim_status_date": df.iloc[i]["last_update_date"].strftime("%Y-%m"),
+        }
+        claims.append(claim_info)
+    pf_manager = SqlPortfolioManager(executor=db)
+    pf_manager.add_company(
+        company_id=company_id, insertion_date=now, order_type=OrderType.CLAIMS
+    )
+    return [ClaimInfo.model_validate(claim) for claim in claims]
 
 
 @app.get("/client_portfolio", response_model=List[DummyClientPortfolioModel])
