@@ -3,35 +3,33 @@ from typing import List
 
 from fastapi import FastAPI
 
-from awesome_api.claims_management import (
-    hash_claim_id,
-    set_claim_size,
-    set_claim_status,
-)
+from awesome_api.claims_management import get_claim_info_cp
 from awesome_api.models import (
     ClaimInfo,
-    DummyClientPortfolioModel,
-    DummyScoreModel,
+    ClientPortfolioModel,
+    ClientUpdate,
     MonitoringStatus,
     OrderType,
+    ScoreModel,
 )
 from awesome_api.portfolio_management import SqlPortfolioManager
+from awesome_api.update_management import get_claim_update, get_score_update
 from awesome_api.utils.postgres_utils import PostgresDataSource
 
 app = FastAPI()
 
 
-@app.get("/dummy", response_model=List[DummyScoreModel])
+@app.get("/dummy", response_model=List[ScoreModel])
 def get_dummy_two_scores_records():
     db = PostgresDataSource()
     df = db.run_select_query(query="SELECT * FROM company_credit_scores LIMIT 2;")
     del df["score_type"]
     df["score_date"] = df["score_date"].apply(lambda x: x.isoformat())
     records = df.to_dict("records")
-    return [DummyScoreModel.model_validate(record) for record in records]
+    return [ScoreModel.model_validate(record) for record in records]
 
 
-@app.get("/{company_id}/scores", response_model=List[DummyScoreModel])
+@app.get("/{company_id}/scores", response_model=List[ScoreModel])
 def get_scores(company_id: str):
     now = datetime.now()
     cutoff_date = now - timedelta(days=5 * 365)
@@ -49,41 +47,63 @@ def get_scores(company_id: str):
     pf_manager.add_company(
         company_id=company_id, insertion_date=now, order_type=OrderType.SCORES
     )
-    return [DummyScoreModel.model_validate(record) for record in records]
+    return [ScoreModel.model_validate(record) for record in records]
 
 
 @app.get("/{company_id}/claims", response_model=list[ClaimInfo])
 def get_claims(company_id: str):
     now = datetime.now()
-    params = {"company_id": company_id}
+    cutoff_date = now - timedelta(days=5 * 365)
+    params = {"company_id": company_id, "cutoff_date": cutoff_date}
     db = PostgresDataSource()
     df = db.run_select_query(
         query="SELECT claim_creation_date, debtor_id, claim_id, initial_claim_amount, current_claim_amount, last_update_date"
         " FROM claims"
-        " WHERE debtor_id = :company_id",
+        " WHERE debtor_id = :company_id"
+        " and claim_creation_date >= :cutoff_date;",
         params=params,
     )
-    claims = []
-    for i in range(len(df)):
-        claim_info = {
-            "claim_creation_date": df.iloc[i]["claim_creation_date"].strftime("%Y-%m"),
-            "company_id": df.iloc[i]["debtor_id"],
-            "hashed_claim_id": hash_claim_id(df.iloc[i]["claim_id"]),
-            "claim_size": set_claim_size(df.iloc[i]["initial_claim_amount"]),
-            "claim_status": set_claim_status(
-                df.iloc[i]["initial_claim_amount"], df.iloc[i]["current_claim_amount"]
-            ),
-            "claim_status_date": df.iloc[i]["last_update_date"].strftime("%Y-%m"),
-        }
-        claims.append(claim_info)
+    claims = get_claim_info_cp(df)
     pf_manager = SqlPortfolioManager(executor=db)
     pf_manager.add_company(
         company_id=company_id, insertion_date=now, order_type=OrderType.CLAIMS
     )
-    return [ClaimInfo.model_validate(claim) for claim in claims]
+    return claims
 
 
-@app.get("/client_portfolio", response_model=List[DummyClientPortfolioModel])
+@app.get("/{update_date}/updates", response_model=ClientUpdate)
+def get_updates(update_date: str):
+    db = PostgresDataSource()
+    pf_manager = SqlPortfolioManager(executor=db)
+    now = datetime.now()
+    monitored_companies = pf_manager.get_portfolio()
+    score_updates = []
+    claim_updates = []
+    for company in monitored_companies:
+        score_updates.extend(
+            get_score_update(company_id=company.company_id, update_date=update_date)
+        )
+        pf_manager.add_company(
+            company_id=company.company_id,
+            insertion_date=now,
+            order_type=OrderType.SCORE_UPDATES,
+        )
+        claim_updates.extend(
+            get_claim_update(company_id=company.company_id, update_date=update_date)
+        )
+        pf_manager.add_company(
+            company_id=company.company_id,
+            insertion_date=now,
+            order_type=OrderType.CLAIM_UPDATES,
+        )
+    return ClientUpdate(
+        update_date=update_date,
+        score_updates=score_updates,
+        claim_updates=claim_updates,
+    )
+
+
+@app.get("/client_portfolio", response_model=List[ClientPortfolioModel])
 def get_portfolio():
     db = PostgresDataSource()
     pf_manager = SqlPortfolioManager(executor=db)

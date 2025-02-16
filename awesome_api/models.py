@@ -4,16 +4,16 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from pandas import DataFrame
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
-class DummyScoreModel(BaseModel):
+class ScoreModel(BaseModel):
     score_date: str
     score: int
     company_id: str
 
 
-class DummyClientPortfolioModel(BaseModel):
+class ClientPortfolioModel(BaseModel):
     company_id: str
     validity_start_date: str
 
@@ -64,6 +64,12 @@ class ClientOrder(BaseModel):
     order_date: datetime
 
 
+class ClientUpdate(BaseModel):
+    update_date: str
+    score_updates: List[ScoreModel] = Field(default_factory=list)
+    claim_updates: List[ClaimInfo] = Field(default_factory=list)
+
+
 class SqlRequestExecutor(ABC):
     """Abstract class for data source connection and querying."""
 
@@ -107,7 +113,7 @@ class PortfolioManager(ABC):
     @abstractmethod
     def get_portfolio(
         self, only_active_companies: bool = True
-    ) -> List[DummyClientPortfolioModel]:
+    ) -> List[ClientPortfolioModel]:
         """"""
 
     @abstractmethod

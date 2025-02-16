@@ -7,7 +7,7 @@ from pandas import DataFrame
 from awesome_api.errors import MultipleMonitoringError
 from awesome_api.models import (
     ClientOrder,
-    DummyClientPortfolioModel,
+    ClientPortfolioModel,
     OrderType,
     PortfolioManager,
     TransactionalQuery,
@@ -159,12 +159,12 @@ class SqlPortfolioManager(PortfolioManager):
 
     def get_portfolio(
         self, only_active_companies: bool = True
-    ) -> List[DummyClientPortfolioModel]:
+    ) -> List[ClientPortfolioModel]:
         query = "select * from client_portfolio where validity_end_date is null;"
         df = self.executor.run_select_query(query=query)
         for col in ["validity_start_date"]:
             df[col] = df[col].apply(lambda x: x.isoformat())
         return [
-            DummyClientPortfolioModel.model_validate(record)
+            ClientPortfolioModel.model_validate(record)
             for record in df.to_dict("records")
         ]

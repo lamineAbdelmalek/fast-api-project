@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS client_portfolio (
 CREATE TABLE IF NOT EXISTS client_orders (
     ORDER_DATE TIMESTAMP NOT NULL,
     COMPANY_ID VARCHAR(12) NOT NULL,
-    ORDER_TYPE VARCHAR(12) NOT NULL CHECK (
+    ORDER_TYPE VARCHAR(14) NOT NULL CHECK (
         ORDER_TYPE IN ('scores', 'claims', 'score_updates', 'claim_updates')
     )
 );

@@ -12,3 +12,11 @@ class MultipleMonitoringError(AwesomeApiError):
         metadata = {"company_id": company_id}
         metadata.update(other_metadata)
         super().__init__(**metadata)
+
+
+class WrongDateFormat(AwesomeApiError):
+    def __init__(self, date: str, **other_metadata):
+        self.date: str = date
+        metadata = {"date": date}
+        metadata.update(other_metadata)
+        super().__init__(**metadata)
