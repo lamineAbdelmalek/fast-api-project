@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 from typing import List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from awesome_api.claims_management import get_claim_info_cp
+from awesome_api.errors import WrongDateFormat
 from awesome_api.models import (
     ClaimInfo,
     ClientPortfolioModel,
@@ -17,6 +19,14 @@ from awesome_api.update_management import get_claim_update, get_score_update
 from awesome_api.utils.postgres_utils import PostgresDataSource
 
 app = FastAPI()
+
+
+@app.exception_handler(WrongDateFormat)
+async def unicorn_exception_handler(request: Request, exc: WrongDateFormat):
+    return JSONResponse(
+        status_code=400,
+        content={"message": exc.metadata["message"]},
+    )
 
 
 @app.get("/dummy", response_model=List[ScoreModel])
@@ -71,17 +81,26 @@ def get_claims(company_id: str):
     return claims
 
 
-@app.get("/{update_date}/updates", response_model=ClientUpdate)
-def get_updates(update_date: str):
+@app.get("/updates", response_model=ClientUpdate)
+def get_updates(input_update_date: str):
+    now = datetime.now()
+    try:
+        update_date = datetime.strptime(input_update_date, "%Y-%m-%d")
+    except ValueError:
+        raise WrongDateFormat(
+            date=input_update_date,
+            message="Wrong date format, enter date in format YYYY-MM-DD",
+        )
     db = PostgresDataSource()
     pf_manager = SqlPortfolioManager(executor=db)
-    now = datetime.now()
     monitored_companies = pf_manager.get_portfolio()
     score_updates = []
     claim_updates = []
     for company in monitored_companies:
         score_updates.extend(
-            get_score_update(company_id=company.company_id, update_date=update_date)
+            get_score_update(
+                company_id=company.company_id, update_date=update_date, call_date=now
+            )
         )
         pf_manager.add_company(
             company_id=company.company_id,
@@ -89,7 +108,9 @@ def get_updates(update_date: str):
             order_type=OrderType.SCORE_UPDATES,
         )
         claim_updates.extend(
-            get_claim_update(company_id=company.company_id, update_date=update_date)
+            get_claim_update(
+                company_id=company.company_id, update_date=update_date, call_date=now
+            )
         )
         pf_manager.add_company(
             company_id=company.company_id,

@@ -56,11 +56,13 @@ def get_claim_info(df: DataFrame) -> List[ClaimInfo]:
 
 
 def get_claim_info_cp(df: DataFrame) -> List[ClaimInfo]:
-    cp = df.copy()
-    preprocess_cp(cp)
-    record_list = cp.to_dict("records")
-    claims = [ClaimInfo.model_validate(record) for record in record_list]
-    del cp, record_list
+    claims = []
+    if len(df):
+        cp = df.copy()
+        preprocess_cp(cp)
+        record_list = cp.to_dict("records")
+        claims = [ClaimInfo.model_validate(record) for record in record_list]
+        del cp, record_list
     return claims
 
 

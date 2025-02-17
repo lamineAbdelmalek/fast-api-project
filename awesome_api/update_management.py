@@ -2,21 +2,14 @@ from datetime import datetime, timedelta
 from typing import List
 
 from awesome_api.claims_management import get_claim_info_cp
-from awesome_api.errors import WrongDateFormat
 from awesome_api.models import ClaimInfo, ScoreModel
 from awesome_api.utils.postgres_utils import PostgresDataSource
 
 
-def get_score_update(company_id: str, update_date: str) -> List[ScoreModel]:
-    now = datetime.now()
-    cutoff_date = now - timedelta(days=5 * 365)
-    try:
-        update_date = datetime.strptime(update_date, "%Y-%m-%d")
-    except ValueError:
-        raise WrongDateFormat(
-            date=update_date,
-            message="Wrong date format, enter date in format YYYY-MM-DD",
-        )
+def get_score_update(
+    company_id: str, update_date: datetime, call_date: datetime
+) -> List[ScoreModel]:
+    cutoff_date = call_date - timedelta(days=5 * 365)
     next_day = update_date + timedelta(days=1)
     params = {
         "company_id": company_id,
@@ -34,23 +27,14 @@ def get_score_update(company_id: str, update_date: str) -> List[ScoreModel]:
         params=params,
     )
     df["score_date"] = df["score_date"].apply(lambda x: x.isoformat())
-    if len(df) > 0:
-        record_list = df.to_dict("records")
-        return [ScoreModel.model_validate(record) for record in record_list]
-    else:
-        return []
+    record_list = df.to_dict("records")
+    return [ScoreModel.model_validate(record) for record in record_list]
 
 
-def get_claim_update(company_id: str, update_date: str) -> List[ClaimInfo]:
-    now = datetime.now()
-    cutoff_date = now - timedelta(days=5 * 365)
-    try:
-        update_date = datetime.strptime(update_date, "%Y-%m-%d")
-    except ValueError:
-        raise WrongDateFormat(
-            date=update_date,
-            message="Wrong date format, enter date in format YYYY-MM-DD",
-        )
+def get_claim_update(
+    company_id: str, update_date: datetime, call_date: datetime
+) -> List[ClaimInfo]:
+    cutoff_date = call_date - timedelta(days=5 * 365)
     next_day = update_date + timedelta(days=1)
     params = {
         "company_id": company_id,
@@ -69,7 +53,4 @@ def get_claim_update(company_id: str, update_date: str) -> List[ClaimInfo]:
         " and last_update_date < :next_day",
         params=params,
     )
-    if len(df) > 0:
-        return get_claim_info_cp(df)
-    else:
-        return []
+    return get_claim_info_cp(df)
