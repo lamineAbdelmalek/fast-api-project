@@ -8,7 +8,7 @@ from awesome_api.claims_management import get_claim_info_cp
 from awesome_api.models import ClaimInfo, ScoreModel
 from awesome_api.utils.parallel_extraction import parallel_execution
 from awesome_api.utils.postgres_utils import PostgresDataSource
-from awesome_api.utils.sql_utils import parametrized_in_clause, generate_param_dict
+from awesome_api.utils.sql_utils import generate_param_dict, parametrized_in_clause
 
 
 def get_score_update(
@@ -50,20 +50,29 @@ def get_claim_update(
 
     db = PostgresDataSource()
     df = db.run_select_query(
-        query="SELECT claim_creation_date, debtor_id, claim_id, initial_claim_amount, current_claim_amount, last_update_date"
-        " FROM claims"
-        " WHERE debtor_id = :company_id"
-        " and claim_creation_date >= :cutoff_date"
-        " and last_update_date >= :update_date"
-        " and last_update_date < :next_day",
+        query="""SELECT
+        claim_creation_date,
+        debtor_id,
+        claim_id,
+        initial_claim_amount,
+        current_claim_amount,
+        last_update_date
+        FROM
+        claims
+        WHERE
+        debtor_id = :company_id
+        and claim_creation_date >= :cutoff_date
+        and last_update_date >= :update_date
+        and last_update_date < :next_day""",
         params=params,
     )
     return get_claim_info_cp(df)
 
+
 def get_score_updates_companies_chunk(
     chunk: Sequence[str], update_date: datetime, call_date: datetime
 ) -> DataFrame:
-    if len(chunk)==0:
+    if len(chunk) == 0:
         raise ValueError("Chunk must not be empty")
     if len(chunk) > 1000:
         raise ValueError("Chunk size must not exceed 1000")
@@ -77,7 +86,7 @@ def get_score_updates_companies_chunk(
         "cutoff_date": cutoff_date,
         "update_date": update_date,
         "next_day": next_day,
-        **company_param_dict
+        **company_param_dict,
     }
     df = db.run_select_query(
         query="SELECT score_date, score, company_id FROM company_credit_scores"
@@ -89,36 +98,42 @@ def get_score_updates_companies_chunk(
     )
     df["score_date"] = df["score_date"].apply(lambda x: x.isoformat())
 
-    # return [ScoreModel.model_validate(record) for record in record_list]
     return df
 
+
 def get_score_updates_companies(
-    companies:Sequence[str],
+    companies: Sequence[str],
     update_date: datetime,
     call_date: datetime,
     chunk_size: int,
-    pool_size:int,
+    pool_size: int,
 ) -> List[ScoreModel]:
     extraction_func = partial(
         get_score_updates_companies_chunk,
         update_date=update_date,
         call_date=call_date,
     )
-    res = parallel_execution(func=extraction_func, values=companies, chunk_size=chunk_size, pool_size=pool_size)
+    res = parallel_execution(
+        func=extraction_func,
+        values=companies,
+        chunk_size=chunk_size,
+        pool_size=pool_size,
+    )
     return [ScoreModel.model_validate(record) for record in res.to_dict("records")]
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     example = get_score_updates_companies_chunk(
-        chunk=['NVH0D651WH34', '5U0YGGPQNRT6', 'H5BG77SAYJN0', 'XOLEJ1U4XNHU'],
-        update_date = datetime(2024, 4, 14),
+        chunk=["NVH0D651WH34", "5U0YGGPQNRT6", "H5BG77SAYJN0", "XOLEJ1U4XNHU"],
+        update_date=datetime(2024, 4, 14),
         call_date=datetime.now(),
     )
     example2 = get_score_updates_companies(
-        companies=['NVH0D651WH34', '5U0YGGPQNRT6', 'H5BG77SAYJN0', 'XOLEJ1U4XNHU'],
+        companies=["NVH0D651WH34", "5U0YGGPQNRT6", "H5BG77SAYJN0", "XOLEJ1U4XNHU"],
         update_date=datetime(2024, 4, 14),
         call_date=datetime.now(),
         chunk_size=2,
-        pool_size=4
+        pool_size=4,
     )
     print(example.shape)
     print(example2)

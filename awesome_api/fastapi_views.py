@@ -6,14 +6,8 @@ from fastapi.responses import JSONResponse
 
 from awesome_api.claims_management import get_claim_info_cp
 from awesome_api.errors import WrongDateFormat
-from awesome_api.models import (
-    ClaimInfo,
-    ClientPortfolioModel,
-    ClientUpdate,
-    MonitoringStatus,
-    OrderType,
-    ScoreModel,
-)
+from awesome_api.models import (ClaimInfo, ClientPortfolioModel, ClientUpdate,
+                                MonitoringStatus, OrderType, ScoreModel)
 from awesome_api.portfolio_management import SqlPortfolioManager
 from awesome_api.update_management import get_claim_update, get_score_update
 from awesome_api.utils.postgres_utils import PostgresDataSource
@@ -67,10 +61,18 @@ def get_claims(company_id: str):
     params = {"company_id": company_id, "cutoff_date": cutoff_date}
     db = PostgresDataSource()
     df = db.run_select_query(
-        query="SELECT claim_creation_date, debtor_id, claim_id, initial_claim_amount, current_claim_amount, last_update_date"
-        " FROM claims"
-        " WHERE debtor_id = :company_id"
-        " and claim_creation_date >= :cutoff_date;",
+        query="""SELECT
+        claim_creation_date,
+        debtor_id, claim_id,
+        initial_claim_amount,
+        current_claim_amount,
+        last_update_date
+        FROM
+        claims
+        WHERE
+        debtor_id = :company_id
+        and claim_creation_date >= :cutoff_date;
+        """,
         params=params,
     )
     claims = get_claim_info_cp(df)

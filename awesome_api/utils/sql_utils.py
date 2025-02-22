@@ -1,4 +1,4 @@
-from typing import Dict, Any, Sequence
+from typing import Any, Dict, Sequence
 
 
 def parametrized_in_clause(size: int, prefix: str = "") -> str:
@@ -11,5 +11,6 @@ def parametrized_in_clause(size: int, prefix: str = "") -> str:
         clause = f" IN ({values})"
     return clause
 
-def generate_param_dict(values: Sequence[str], prefix: str= "") -> Dict[str, Any]:
+
+def generate_param_dict(values: Sequence[str], prefix: str = "") -> Dict[str, Any]:
     return {f"{prefix}_{i}": value for i, value in enumerate(values)}
