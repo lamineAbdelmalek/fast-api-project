@@ -6,8 +6,14 @@ from fastapi.responses import JSONResponse
 
 from awesome_api.claims_management import get_claim_info_cp
 from awesome_api.errors import WrongDateFormat
-from awesome_api.models import (ClaimInfo, ClientPortfolioModel, ClientUpdate,
-                                MonitoringStatus, OrderType, ScoreModel)
+from awesome_api.models import (
+    ClaimInfo,
+    ClientPortfolioModel,
+    ClientUpdate,
+    MonitoringStatus,
+    OrderType,
+    ScoreModel,
+)
 from awesome_api.portfolio_management import SqlPortfolioManager
 from awesome_api.update_management import get_claim_update, get_score_update
 from awesome_api.utils.postgres_utils import PostgresDataSource
@@ -120,7 +126,7 @@ def get_updates(input_update_date: str):
             order_type=OrderType.CLAIM_UPDATES,
         )
     return ClientUpdate(
-        update_date=update_date,
+        update_date=update_date.isoformat(),
         score_updates=score_updates,
         claim_updates=claim_updates,
     )

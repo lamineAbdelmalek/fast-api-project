@@ -18,7 +18,7 @@ def values_chunker(
 
 
 def parallel_execution(
-    func: Callable[[...], DataFrame],
+    func: Callable[..., DataFrame],
     values: Sequence[str],
     chunk_size: int,
     pool_size: int,

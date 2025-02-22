@@ -32,7 +32,8 @@ def set_claim_size(initial_claim_amount: int) -> ClaimSize:
         return ClaimSize.M
     elif (initial_claim_amount < 500000) and (initial_claim_amount >= 100000):
         return ClaimSize.L
-    elif initial_claim_amount >= 500000:
+    # elif initial_claim_amount >= 500000:
+    else:
         return ClaimSize.XL
 
 
