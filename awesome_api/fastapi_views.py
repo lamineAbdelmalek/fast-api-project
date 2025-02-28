@@ -67,10 +67,18 @@ def get_claims(company_id: str):
     params = {"company_id": company_id, "cutoff_date": cutoff_date}
     db = PostgresDataSource()
     df = db.run_select_query(
-        query="SELECT claim_creation_date, debtor_id, claim_id, initial_claim_amount, current_claim_amount, last_update_date"
-        " FROM claims"
-        " WHERE debtor_id = :company_id"
-        " and claim_creation_date >= :cutoff_date;",
+        query="""SELECT
+        claim_creation_date,
+        debtor_id, claim_id,
+        initial_claim_amount,
+        current_claim_amount,
+        last_update_date
+        FROM
+        claims
+        WHERE
+        debtor_id = :company_id
+        and claim_creation_date >= :cutoff_date;
+        """,
         params=params,
     )
     claims = get_claim_info_cp(df)
@@ -118,7 +126,7 @@ def get_updates(input_update_date: str):
             order_type=OrderType.CLAIM_UPDATES,
         )
     return ClientUpdate(
-        update_date=update_date,
+        update_date=update_date.isoformat(),
         score_updates=score_updates,
         claim_updates=claim_updates,
     )
